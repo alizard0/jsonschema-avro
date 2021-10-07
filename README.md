@@ -7,38 +7,23 @@ Converts JSON-schema definitions into Avro definitions.
 
 ## Install
 
+    // clone repo and inside the repo do, to install the module locally
+    npm install
+    // inside your node project do, which will fetch the local version
     npm install jsonschema-avro
 
-## Consume
-
+## Example
+    // inside a file called, converter.js
     const jsonSchemaAvro = require('jsonschema-avro')
-    
-    const inJson = {
-    	"description": "Example description",
-    	"type": "object",
-    	"properties": {
-    		"first_name": { "type": "string" },
-    		"address": {
-    			"type": "object",
-    			"properties": {
-    				"street_address": { "type": "string" }
-    			}
-    		}
-    	}
-    }
-    
+    var fs = require('fs')
+    var path = process.cwd()
+    var buffer = fs.readFileSync(path + "/" + process.argv[2])
+    const inJson = JSON.parse(buffer.toString())
     const avro = jsonSchemaAvro.convert(inJson)
-
-Please ensure that the input JSON schema is dereferenced so that all external references have been resolved. [json-schema-ref-parser](https://www.npmjs.com/package/json-schema-ref-parser) can do this, prior to using this module.
-
-## Test
-
-    npm test
-
-To run a single test, using the name of the sample:
-
-    ONLY=optional npm test
-
-## TODO
-
-* Handle `anyOf` and `allOf`.
+    console.log(JSON.stringify(avro))
+    
+    // create a file schema.json with your json-schema
+    touch schema.json
+    
+    // usage
+    node coverter.js schema.json > avro.json
