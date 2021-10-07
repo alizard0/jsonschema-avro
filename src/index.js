@@ -23,49 +23,18 @@ jsonSchemaAvro._pascalCase = (string) => {
     .replace(new RegExp(/\w/), s => s.toUpperCase());
 }
 
-jsonSchemaAvro.convert = (jsonSchema) => {
+jsonSchemaAvro.convert = (jsonSchema, nameSpace, name) => {
 	if(!jsonSchema){
 		throw new Error('No schema given')
 	}
 	const record = {
-		name: jsonSchemaAvro._idToName(jsonSchema.id) || 'main',
+		namespace: nameSpace,
+		name: name,
 		type: 'record',
 		doc: jsonSchema.description,
 		fields: jsonSchema.properties ? jsonSchemaAvro._convertProperties(jsonSchema.properties, jsonSchema.required) : []
 	}
-	const nameSpace = jsonSchemaAvro._idToNameSpace(jsonSchema.id)
-	if(nameSpace){
-		record.namespace = nameSpace
-	}
 	return record
-}
-
-jsonSchemaAvro._idToNameSpace = (id) => {
-	if(!id){
-		return
-	}
-	const parts = url.parse(id)
-	let nameSpace = []
-	if(parts.host){
-		const reverseHost = parts.host.split(/\./).reverse()
-		nameSpace = nameSpace.concat(reverseHost)
-	}
-	if(parts.path){
-		const splitPath = parts.path.replace(/^\//, '').replace('.', '_').split(/\//)
-		nameSpace = nameSpace.concat(splitPath.slice(0, splitPath.length - 1))
-	}
-	return nameSpace.join('.')
-}
-
-jsonSchemaAvro._idToName = (id) => {
-	if(!id){
-		return
-	}
-	const parts = url.parse(id)
-	if(!parts.path){
-		return
-	}
-	return parts.path.replace(/^\//, '').replace('.', '_').split(/\//).pop()
 }
 
 jsonSchemaAvro._isComplex = (schema) => schema.type === 'object'
