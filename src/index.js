@@ -31,7 +31,6 @@ jsonSchemaAvro.convert = (jsonSchema, nameSpace, name) => {
 		namespace: nameSpace,
 		name: name,
 		type: 'record',
-		doc: jsonSchema.description,
 		fields: jsonSchema.properties ? jsonSchemaAvro._convertProperties(jsonSchema.properties, jsonSchema.required) : []
 	}
 	return record
@@ -48,10 +47,10 @@ jsonSchemaAvro._isRequired = (list, item) => list.includes(item)
 jsonSchemaAvro._convertProperties = (schema = {}, required = []) => {
 	return Object.keys(schema).map((item) => {
 		if(jsonSchemaAvro._isComplex(schema[item])){
-			return jsonSchemaAvro._convertComplexProperty(item, schema[item])
+			return jsonSchemaAvro._convertComplexProperty(item, schema[item], jsonSchemaAvro._isRequired(required, item))
 		}
 		else if(jsonSchemaAvro._isArray(schema[item])){
-			return jsonSchemaAvro._convertArrayProperty(item, schema[item])
+			return jsonSchemaAvro._convertArrayProperty(item, schema[item], required)
 		}
 		else if(jsonSchemaAvro._hasEnum(schema[item])){
 			return jsonSchemaAvro._convertEnumProperty(item, schema[item])
@@ -60,31 +59,40 @@ jsonSchemaAvro._convertProperties = (schema = {}, required = []) => {
 	})
 }
 
-jsonSchemaAvro._convertComplexProperty = (name, contents) => {
-	return {
-		name,
-		doc: contents.description || '',
-		type: {
-			type: 'record',
-			name: jsonSchemaAvro._pascalCase(`${name}Record`),
-			fields: jsonSchemaAvro._convertProperties(contents.properties, contents.required)
+jsonSchemaAvro._convertComplexProperty = (name, contents, required) => {
+	if (required) {
+		return {
+			name,
+			type: {
+				type: 'record',
+				name: jsonSchemaAvro._pascalCase(`${name}Record`),
+				fields: jsonSchemaAvro._convertProperties(contents.properties, contents.required)
+			}
+		}
+	} else {
+		return {
+			name,
+			default: null,
+			type: [
+				"null",
+				{
+					type: 'record',
+					name: jsonSchemaAvro._pascalCase(`${name}Record`),
+					fields: jsonSchemaAvro._convertProperties(contents.properties, contents.required)
+				}
+			]
 		}
 	}
 }
 
-jsonSchemaAvro._convertArrayProperty = (name, contents) => {
+jsonSchemaAvro._convertArrayProperty = (name, contents, required) => {
 	return {
 		name,
-		doc: contents.description || '',
 		type: {
 			type: 'array',
 			items: jsonSchemaAvro._isComplex(contents.items)
-				? {
-					type: 'record',
-					name: jsonSchemaAvro._pascalCase(`${name}Record`),
-					fields: jsonSchemaAvro._convertProperties(contents.items.properties, contents.items.required)
-				}
-				: jsonSchemaAvro._convertProperty(name, contents.items)
+				? jsonSchemaAvro._convertComplexProperty(name, contents.items, jsonSchemaAvro._isRequired(required, name))
+				: jsonSchemaAvro._convertProperty(name, contents.items, jsonSchemaAvro._isRequired(required, name))
 		}
 	}
 }
@@ -92,7 +100,6 @@ jsonSchemaAvro._convertArrayProperty = (name, contents) => {
 jsonSchemaAvro._convertEnumProperty = (name, contents) => {
 	const prop = {
 		name,
-		doc: contents.description || '',
 		type: contents.enum.every((symbol) => reSymbol.test(symbol))
 			? {
 				type: 'enum',
@@ -109,8 +116,7 @@ jsonSchemaAvro._convertEnumProperty = (name, contents) => {
 
 jsonSchemaAvro._convertProperty = (name, value, isRequired = false) => {
 	const prop = {
-		name,
-		doc: value.description || ''
+		name
 	}
 	let types = []
 	if(value.hasOwnProperty('default')){
