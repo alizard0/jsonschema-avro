@@ -19,11 +19,11 @@ Converts JSON-schema definitions into Avro definitions.
     var path = process.cwd()
     var buffer = fs.readFileSync(path + "/" + process.argv[2])
     const inJson = JSON.parse(buffer.toString())
-    const avro = jsonSchemaAvro.convert(inJson)
+    const avro = jsonSchemaAvro.convert(inJson, process.argv[3], process.argv[4])
     console.log(JSON.stringify(avro))
     
     // create a file schema.json with your json-schema
     touch schema.json
     
     // usage
-    node coverter.js schema.json > avro.json
+    node converter.js schema.json "com.example.avro.MyAvro" "MyAvro" > avro.json
