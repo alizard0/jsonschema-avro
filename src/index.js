@@ -12,6 +12,17 @@ const typeMapping = {
 
 const reSymbol = /^[A-Za-z_][A-Za-z0-9_]*$/
 
+jsonSchemaAvro.pascalCase = (string) => {
+  return `${string}`
+    .replace(new RegExp(/[-_]+/, 'g'), ' ')
+    .replace(new RegExp(/[^\w\s]/, 'g'), '')
+    .replace(
+      new RegExp(/\s+(.)(\w*)/, 'g'),
+      ($1, $2, $3) => `${$2.toUpperCase() + $3.toLowerCase()}`
+    )
+    .replace(new RegExp(/\w/), s => s.toUpperCase());
+}
+
 jsonSchemaAvro.convert = (jsonSchema) => {
 	if(!jsonSchema){
 		throw new Error('No schema given')
@@ -82,11 +93,11 @@ jsonSchemaAvro._convertProperties = (schema = {}, required = []) => {
 
 jsonSchemaAvro._convertComplexProperty = (name, contents) => {
 	return {
-		name,
+		jsonSchemaAvro.pascalCase(name),
 		doc: contents.description || '',
 		type: {
 			type: 'record',
-			name: `${name}_record`,
+			name: `${name}Record`,
 			fields: jsonSchemaAvro._convertProperties(contents.properties, contents.required)
 		}
 	}
@@ -94,14 +105,14 @@ jsonSchemaAvro._convertComplexProperty = (name, contents) => {
 
 jsonSchemaAvro._convertArrayProperty = (name, contents) => {
 	return {
-		name,
+		jsonSchemaAvro.pascalCase(name),
 		doc: contents.description || '',
 		type: {
 			type: 'array',
 			items: jsonSchemaAvro._isComplex(contents.items)
 				? {
 					type: 'record',
-					name: `${name}_record`,
+					name: `${name}Record`,
 					fields: jsonSchemaAvro._convertProperties(contents.items.properties, contents.items.required)
 				}
 				: jsonSchemaAvro._convertProperty(name, contents.items)
@@ -111,12 +122,12 @@ jsonSchemaAvro._convertArrayProperty = (name, contents) => {
 
 jsonSchemaAvro._convertEnumProperty = (name, contents) => {
 	const prop = {
-		name,
+		jsonSchemaAvro.pascalCase(name),
 		doc: contents.description || '',
 		type: contents.enum.every((symbol) => reSymbol.test(symbol))
 			? {
 				type: 'enum',
-				name: `${name}_enum`,
+				name: `${name}Enum`,
 				symbols: contents.enum
 			}
 			: 'string'
