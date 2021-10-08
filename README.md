@@ -12,6 +12,10 @@ Converts JSON-schema definitions into Avro definitions.
     // inside your node project do, which will fetch the local version
     npm install jsonschema-avro
 
+## Extra features
+1. Supports optional records and arrays
+2. Avoid records with the same name
+
 ## Example
     // inside a file called, converter.js
     const jsonSchemaAvro = require('jsonschema-avro')
